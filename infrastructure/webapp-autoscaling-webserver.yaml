@@ -97,7 +97,7 @@ Resources:
           service httpd start
           #echo "<?php phpinfo();?>" > /var/www/html/index.php
           cd /var/www/html
-          git clone https://github.com/ajobayer/TestWebsite.git
+          git clone https://github.com/ajobayer/web-server-sample.git
           cp -r TestWebsite/* .
           sed -ie 's/app-server-elb-url/'"${PMAPPLoadBalancerUrl}"'/g' index.php
 
