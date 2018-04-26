@@ -28,9 +28,6 @@ Before you can deploy this process, you need the following:
  - US East (N. Virginia)
  - US East (Ohio)
  - US West (N. California)
- - US West (Oregon)
- - Asia Pacific (Tokyo)
- - Asia Pacific (Singapore)
  - Asia Pacific (Sydney)
 
 ![infrastructure-overview](webapp-architecture-overview.png)
@@ -44,10 +41,6 @@ The repository consists of a set of nested templates that deploy the following:
  - An [Application Load Balancer (ALB)](https://aws.amazon.com/elasticloadbalancing/applicationloadbalancer/) to the public subnets to handle inbound traffic.
  - ALB path-based routes for each ECS service to route the inbound traffic to the correct service.
  - Centralized container logging with [Amazon CloudWatch Logs](http://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/WhatIsCloudWatchLogs.html).
-
-## Why use AWS CloudFormation with Amazon ECS?
-
-Using CloudFormation to deploy and manage services with ECS has a number of nice benefits over more traditional methods ([AWS CLI](https://aws.amazon.com/cli), scripting, etc.). 
 
 #### Infrastructure-as-Code
 
