@@ -98,7 +98,7 @@ Resources:
           #echo "<?php phpinfo();?>" > /var/www/html/index.php
           cd /var/www/html
           git clone https://github.com/ajobayer/web-server-sample.git
-          cp -r TestWebsite/* .
+          cp -r web-server-sample/* .
           sed -ie 's/app-server-elb-url/'"${PMAPPLoadBalancerUrl}"'/g' index.php
 
   # WaitHandleWEB:
