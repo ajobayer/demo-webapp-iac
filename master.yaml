@@ -152,7 +152,7 @@ Resources:
         PMKeyName: !Ref "PMKeyName"
         PMInstanceType: !Ref "PMInstanceType"
         PMRegionAMI: !FindInMap ["RegionMap", !Ref "AWS::Region", "AMI"]
-        PMAPPHostSG : !GetAtt "DemoSecurityGroup.Outputs.ProxyBastionHostSG"
+        PMProxyBastionHostSG : !GetAtt "DemoSecurityGroup.Outputs.ProxyBastionHostSG"
         # PMBastionELB: !GetAtt "DemoAppALB.Outputs.APPLoadBalancer"
         PMIAMS3CWInstanceProfile: !GetAtt "DemoIAMRole.Outputs.IAMS3CWInstanceProfile"
         PMPublicSubnets: !GetAtt "DemoVPC.Outputs.PublicSubnets"
@@ -189,7 +189,7 @@ Resources:
         PMVPC: !GetAtt "DemoVPC.Outputs.VPC"
         PMAPPALBSG: !GetAtt "DemoSecurityGroup.Outputs.WebAppALBSG"
         PMS3Logging: !GetAtt "DemoS3Bucket.Outputs.S3Logging"
-        PMPrivateSubnets: !GetAtt "DemoVPC.Outputs.PrivateSubnets"
+        PMPublicSubnets: !GetAtt "DemoVPC.Outputs.PublicSubnets"
 
   DemoAppAutoScaling:
     Type: "AWS::CloudFormation::Stack"
@@ -210,11 +210,11 @@ Resources:
         PMASDES: !FindInMap ["EnvMap", !Ref "AWS::StackName", "ASDES"]
         #PMWEBDOMAIN: !FindInMap ["EnvMap", !Ref "AWS::StackName", "WEBDOMAIN"]
         PMDataBaseEndpoint: !GetAtt "DemoRDS.Outputs.RdsDbEndpoint"
-        PMDataBaseEndpoint: !GetAtt "DemoRDS.Outputs.RdsDbEndpoint"
         PMDataBaseName: !GetAtt "DemoRDS.Outputs.DbName"
         PMDataBaseUserName: !GetAtt "DemoRDS.Outputs.DbUser"
         PMDataBasePassword: !GetAtt "DemoRDS.Outputs.DbPassword"
         pTargetGroup: !GetAtt "DemoAppALB.Outputs.rTargetGroup"
+
   DemoWebALB:
     Type: "AWS::CloudFormation::Stack"
     DependsOn:
@@ -245,7 +245,7 @@ Resources:
         PMProxyHostSG: !GetAtt "DemoSecurityGroup.Outputs.WebAppHostSG"
         PMWEBLoadBalancer: !GetAtt "DemoWebALB.Outputs.WEBLoadBalancer"
         PMIAMS3CWInstanceProfile: !GetAtt "DemoIAMRole.Outputs.IAMS3CWInstanceProfile"
-        PMPublicSubnets: !GetAtt "DemoVPC.Outputs.PublicSubnets"
+        PMPrivateSubnets: !GetAtt "DemoVPC.Outputs.PrivateSubnets"
         PMAPPLoadBalancerUrl: !GetAtt "DemoAppALB.Outputs.APPLoadBalancerUrl"
         PMASMIN: !FindInMap ["EnvMap", !Ref "AWS::StackName", "ASMIN"]
         PMASMAX: !FindInMap ["EnvMap", !Ref "AWS::StackName", "ASMAX"]

@@ -23,7 +23,7 @@ Parameters:
     Description: "Select the Security Group to use for the ALB"
     Type: "AWS::EC2::SecurityGroup::Id"
 
-  PMPrivateSubnets:
+  PMPublicSubnets:
     Description: "Subnets to launch instances into"
     Type: "List<AWS::EC2::Subnet::Id>"
 
@@ -52,7 +52,7 @@ Resources:
     Properties:
       Name: !Sub "${PMServerEnv}-AppALB"
       Scheme: internet-facing
-      Subnets: !Ref "PMPrivateSubnets"
+      Subnets: !Ref "PMPublicSubnets"
       SecurityGroups:
         - Ref: "PMAPPALBSG"
   ALBListener:

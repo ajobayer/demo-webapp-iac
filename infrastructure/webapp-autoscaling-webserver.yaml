@@ -30,7 +30,7 @@ Parameters:
       - "t2.micro"
       - "m1.small"
 
-  PMPublicSubnets:
+  PMPrivateSubnets:
     Description: "Subnets to launch instances into"
     Type: "List<AWS::EC2::Subnet::Id>"
 
@@ -125,7 +125,7 @@ Resources:
       LaunchConfigurationName:
         Ref: "LaunchConfiguration"
       VPCZoneIdentifier:
-        Ref: "PMPublicSubnets"
+        Ref: "PMPrivateSubnets"
       TargetGroupARNs: 
       - !Ref pTargetGroup
       HealthCheckGracePeriod: "300"

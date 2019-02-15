@@ -108,7 +108,7 @@ Resources:
         Fn::Base64: !Sub 
           - |
               #!/bin/bash -xe
-              yum install httpd php php-mysql git -y
+              yum install httpd php php-mysql mysql-server mysql-client git -y
               yum update -y
               chkconfig httpd on
               service httpd start
@@ -122,11 +122,11 @@ Resources:
               sed -ie 's/db-password/${PMDataBasePassword}/g' config.php
           - PMDataBaseEndpoint:
               Ref: PMDataBaseEndpoint
-          - PMDataBaseName:
+            PMDataBaseName:
               Ref: PMDataBaseName
-          - PMDataBaseUserName:
+            PMDataBaseUserName:
               Ref: PMDataBaseUserName
-          - PMDataBasePassword:
+            PMDataBasePassword:
               Ref: PMDataBasePassword
   # WaitHandleAPP:
   #   Type: "AWS::CloudFormation::WaitConditionHandle"

@@ -32,9 +32,9 @@ Parameters:
     Description: "Subnets to launch instances into"
     Type: "List<AWS::EC2::Subnet::Id>"
 
-  ProxyBastionHostSG:
-    Description: "Select the Security Group to use for the EC2 hosts"
-    Type: "AWS::EC2::SecurityGroup::Id"
+  # ProxyBastionHostSG:
+  #   Description: "Select the Security Group to use for the EC2 hosts"
+  #   Type: "AWS::EC2::SecurityGroup::Id"
 
   # PMWEBDOMAIN:
   #   Description: "A reference to the Webserver domain name"
@@ -64,6 +64,9 @@ Parameters:
     Description: "A reference to the DesiredCapacity"
     Type: "String"
 
+  PMProxyBastionHostSG:
+    Description: "A reference to the PMProxyBastionHostSG"
+    Type: "String"
 
 Resources:
 
@@ -81,7 +84,7 @@ Resources:
       IamInstanceProfile:
         Ref: "PMIAMS3CWInstanceProfile"
       SecurityGroups:
-      - Ref: "PMProxyHostSG"
+      - Ref: "PMProxyBastionHostSG"
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
@@ -117,7 +120,7 @@ Resources:
       HealthCheckType: "ELB"
       Tags:
       - Key: "Name"
-        Value: !Sub "${PMServerEnv}-WEBserver"
+        Value: !Sub "${PMServerEnv}-BastionHost"
         PropagateAtLaunch: 'true'
 
   # Auto ScalingUp Policy - Basic Setup
