@@ -20,7 +20,7 @@ Parameters:
       - "prod"
 
   PMKeyName:
-    Description: "Enter an existing EC2 KeyPair. Default is MyEC2Key"
+    Description: "Enter an existing EC2 KeyPair. Default is DemoEC2Key"
     Type: "String"
 
   PMInstanceType:
@@ -65,7 +65,10 @@ Parameters:
   PMASDES:
     Description: "A reference to the DesiredCapacity"
     Type: "String"
-
+  
+  pTargetGroup:
+    Description: "A reference to the TargetGroup"
+    Type: "String"
 
 ####### Resources Setup #######
 Resources:
@@ -94,8 +97,8 @@ Resources:
           service httpd start
           #echo "<?php phpinfo();?>" > /var/www/html/index.php
           cd /var/www/html
-          git clone https://github.com/ajobayer/php-crud-sample.git
-          cp -r php-sample-crud/source/* .
+          git clone https://github.com/ajobayer/demo-webapp-backend.git
+          cp -r demo-webapp-backend/source/* .
 
   # WaitHandleAPP:
   #   Type: "AWS::CloudFormation::WaitConditionHandle"
@@ -116,9 +119,11 @@ Resources:
       LaunchConfigurationName:
         Ref: "LaunchConfiguration"
       VPCZoneIdentifier: !Ref "PMPrivateSubnets"
-      LoadBalancerNames:
-      - Ref: "PMAPPLoadBalancer"
+      # LoadBalancerNames:
+      # - Ref: "PMAPPLoadBalancer"
       HealthCheckGracePeriod: "300"
+      TargetGroupARNs: 
+      - !Ref pTargetGroup
       HealthCheckType: "ELB"
       Tags:
       - Key: "Name"

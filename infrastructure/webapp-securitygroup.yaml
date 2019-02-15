@@ -36,35 +36,33 @@ Resources:
   # This security group defines Http/Nginx Web proxy host.
   # By default we're just allowing access from the load balancer.  If you want to SSH
   # into the hosts, or expose non-load balanced services you can open their ports here.
-  ProxyHostSG:
+  ProxyBastionHostSG:
     Type: "AWS::EC2::SecurityGroup"
     Properties:
       VpcId: !Ref "PMVPC"
-      GroupDescription: "Web Server Security Group"
+      GroupDescription: "Proxy/Bastion Server Security Group"
       SecurityGroupIngress:
         - CidrIp: !Ref "PMOWNIP"
           FromPort: "22"
           IpProtocol: "tcp"
           ToPort: "22"
-        - FromPort: "443"
+        - CidrIp: "0.0.0.0/0"
+          FromPort: "443"
           IpProtocol: "tcp"
-          SourceSecurityGroupId:
-            Ref: "WEBELBSG"
           ToPort: "443"
-        - FromPort: "80"
+        - CidrIp: "0.0.0.0/0"
+          FromPort: "80"
           IpProtocol: "tcp"
-          SourceSecurityGroupId:
-            Ref: "WEBELBSG"
           ToPort: "80"
       SecurityGroupEgress:
         - IpProtocol: '-1'
           CidrIp: '0.0.0.0/0'
       Tags:
         - Key: "Name"
-          Value: !Sub "${PMServerEnv}-ProxyHostSG"
+          Value: !Sub "${PMServerEnv}-ProxyBastionSG"
 
   # Web Proxy Server Elastic Load Balancer
-  WEBELBSG:
+  WebAppALBSG:
     Type: "AWS::EC2::SecurityGroup"
     Properties:
       GroupDescription: "ELB-WEBSG"
@@ -72,10 +70,6 @@ Resources:
       - IpProtocol: "-1"
         CidrIp: "0.0.0.0/0"
       SecurityGroupIngress:
-      - IpProtocol: 'icmp'
-        FromPort: '-1'
-        ToPort: '-1'
-        CidrIp: '0.0.0.0/0'
       - CidrIp: "0.0.0.0/0"
         FromPort: "80"
         IpProtocol: "tcp"
@@ -87,7 +81,7 @@ Resources:
       VpcId: !Ref "PMVPC"
       Tags:
         - Key: "Name"
-          Value: !Sub "${PMServerEnv}-WEBELBSG"
+          Value: !Sub "${PMServerEnv}-WEB-APP-ALB-SG"
 
   # App Server Security Group
   # PHP-fpm (port 9000)
@@ -99,15 +93,21 @@ Resources:
       SecurityGroupIngress:
         # This is private subnet, so you can only able to ssh once you're inside
         # the public subnet host (E.g. Bastion Host).
-        - CidrIp: "0.0.0.0/0"
-          FromPort: "22"
+        - FromPort: "22"
           IpProtocol: "tcp"
           ToPort: "22"
+          SourceSecurityGroupId:
+            Ref: "ProxyBastionHostSG"
         - FromPort: "80"
           IpProtocol: "tcp"
-          SourceSecurityGroupId:
-            Ref: "APPELBSG"
           ToPort: "80"
+          SourceSecurityGroupId:
+            Ref: "WebAppALBSG"
+        - FromPort: "443"
+          IpProtocol: "tcp"
+          ToPort: "443"
+          SourceSecurityGroupId:
+            Ref: "WebAppALBSG"
       SecurityGroupEgress:
         - IpProtocol: '-1'
           CidrIp: '0.0.0.0/0'
@@ -115,27 +115,7 @@ Resources:
         - Key: "Name"
           Value: !Sub "${PMServerEnv}-APPHostSG"
 
-  # AppServer Elastic Load Balancer
-  APPELBSG:
-    Type: "AWS::EC2::SecurityGroup"
-    Properties:
-      GroupDescription: "ELB-APPSG"
-      SecurityGroupEgress:
-      - IpProtocol: "-1"
-        CidrIp: "0.0.0.0/0"
-      SecurityGroupIngress:
-        - FromPort: "9000"
-          IpProtocol: "tcp"
-          SourceSecurityGroupId:
-            Ref: "ProxyHostSG"
-          ToPort: "9000"
-      VpcId:
-        Ref: "PMVPC"
-      Tags:
-        - Key: "Name"
-          Value: !Sub "${PMServerEnv}-APPELBSG"
-
-  # Allow RDS connection from ProxyHostSG only.
+  # Allow RDS connection from ProxyBastionHostSG only.
   RDSSG:
     Type: "AWS::EC2::SecurityGroup"
     Properties:
@@ -147,13 +127,13 @@ Resources:
       - FromPort: "3306"
         IpProtocol: "tcp"
         SourceSecurityGroupId:
-          Ref: "ProxyHostSG"
+          Ref: "APPHostSG"
         ToPort: "3306"
       VpcId:
         Ref: "PMVPC"
       Tags:
         - Key: "Name"
-          Value: !Sub "${PMServerEnv}-RDSSG"
+          Value: !Sub "${PMServerEnv}-RDS-SG"
 
 
   #####################################################################################
@@ -298,24 +278,19 @@ Resources:
         Code: "-1"
         Type: "-1"
 
-
 Outputs:
 
-  ProxyHostSG:
+  ProxyBastionHostSG:
     Description: "A reference to the security group for Proxy hosts"
-    Value: !Ref "ProxyHostSG"
+    Value: !Ref "ProxyBastionHostSG"
 
-  WEBELBSG:
+  WebAppALBSG:
     Description: "A reference to the security group for Web ELB"
-    Value: !Ref "WEBELBSG"
+    Value: !Ref "WebAppALBSG"
 
   APPHostSG:
     Description: "A reference to the security group for APP hosts"
     Value: !Ref "APPHostSG"
-
-  APPELBSG:
-    Description: "A reference to the security group for Application ELB"
-    Value: !Ref "APPELBSG"
 
   RDSSG:
     Description: "A reference to the security group for RDS"

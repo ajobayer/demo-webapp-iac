@@ -20,7 +20,7 @@ Parameters:
       - "prod"
 
   PMKeyName:
-    Description: "Enter an existing EC2 KeyPair. Default is MyEC2Key"
+    Description: "Enter an existing EC2 KeyPair. Default is DemoEC2Key"
     Type: "String"
 
   PMInstanceType:
@@ -70,6 +70,9 @@ Parameters:
     Description: "A reference to the DesiredCapacity"
     Type: "String"
 
+  pTargetGroup:
+    Description: "A reference to the TargetGroup"
+    Type: "String"
 
 Resources:
 
@@ -77,7 +80,7 @@ Resources:
   LaunchConfiguration:
     Type: "AWS::AutoScaling::LaunchConfiguration"
     Properties:
-      AssociatePublicIpAddress: "true"
+      AssociatePublicIpAddress: "false"
       KeyName:
         Ref: "PMKeyName"
       ImageId:
@@ -89,18 +92,20 @@ Resources:
       SecurityGroups:
       - Ref: "PMProxyHostSG"
       UserData:
-        Fn::Base64: !Sub |
-          #!/bin/bash -xe
-          yum install httpd php php-mysql git -y
-          yum update -y
-          chkconfig httpd on
-          service httpd start
-          #echo "<?php phpinfo();?>" > /var/www/html/index.php
-          cd /var/www/html
-          git clone https://github.com/ajobayer/web-server-sample.git
-          cp -r web-server-sample/* .
-          sed -ie 's/app-server-elb-url/'"${PMAPPLoadBalancerUrl}"'/g' index.php
-
+        Fn::Base64: !Sub 
+          - |
+              #!/bin/bash -xe
+              yum install httpd php php-mysql git -y
+              yum update -y
+              chkconfig httpd on
+              service httpd start
+              #echo "<?php phpinfo();?>" > /var/www/html/index.php
+              cd /var/www/html
+              git clone https://github.com/ajobayer/demo-webapp-frontend.git
+              cp -r demo-webapp-frontend/* .
+              sed -ie 's/app-server-elb-url/${PMAPPLoadBalancerUrl}/g' index.html
+          - PMAPPLoadBalancerUrl:
+              Ref: PMAPPLoadBalancerUrl
   # WaitHandleWEB:
   #   Type: "AWS::CloudFormation::WaitConditionHandle"
   #
@@ -121,8 +126,8 @@ Resources:
         Ref: "LaunchConfiguration"
       VPCZoneIdentifier:
         Ref: "PMPublicSubnets"
-      LoadBalancerNames:
-      - Ref: "PMWEBLoadBalancer"
+      TargetGroupARNs: 
+      - !Ref pTargetGroup
       HealthCheckGracePeriod: "300"
       HealthCheckType: "ELB"
       Tags:

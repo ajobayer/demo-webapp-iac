@@ -7,7 +7,6 @@ Description: >
     This template deploys an Application Load Balancer that exposes our PHP APP services.
 
 Parameters:
-
   PMServerEnv:
     Description: "Server Environment name."
     ConstraintDescription: "Choose an Environment from the drop down"
@@ -16,6 +15,9 @@ Parameters:
       - "dev"
       - "staging"
       - "prod"
+  PMVPC:
+    Description: "VPC to launch instances into"
+    Type: "AWS::EC2::VPC::Id"
 
   PMAPPELBSG:
     Description: "Select the Security Group to use for the ELB"
@@ -25,50 +27,56 @@ Parameters:
     Description: "Subnets to launch instances into"
     Type: "List<AWS::EC2::Subnet::Id>"
 
-  PMS3Logging:
-    Description: "S3 Logging Bucket Name"
-    Type: "String"
+  # PMS3Logging:
+  #   Description: "S3 Logging Bucket Name"
+  #   Type: "String"
 
 
 ####### Resources Setup #######
 Resources:
-
-  APPLoadBalancer:
-    Type: "AWS::ElasticLoadBalancing::LoadBalancer"
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      ConnectionDrainingPolicy:
-        Enabled: "true"
-        Timeout: "30"
-      CrossZone: "true"
-      AccessLoggingPolicy:
-        EmitInterval: '5'
-        Enabled: 'True'
-        S3BucketName: !Ref "PMS3Logging"
-        S3BucketPrefix: "APPELBLogs"
-      HealthCheck:
-        HealthyThreshold: '4'
-        Interval: '30'
-        Target: "TCP:80"
-        Timeout: '5'
-        UnhealthyThreshold: '6'
-      LoadBalancerName: !Sub "${PMServerEnv}-AppELB"
-      Listeners:
-      - InstancePort: '80'
-        InstanceProtocol: "HTTP"
-        LoadBalancerPort: '80'
-        Protocol: "HTTP"
-      #Scheme: "internal"
-      Scheme: "internet-facing"
-      SecurityGroups:
-      - Ref: "PMAPPELBSG"
+      HealthCheckIntervalSeconds: 30
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 4
+      Matcher:
+        HttpCode: '200'
+      Name: !Sub "${PMServerEnv}-AppAlbTargets"
+      Port: 80
+      Protocol: HTTP
+      VpcId: !Ref "PMVPC"
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub "${PMServerEnv}-AppALB"
+      Scheme: internet-facing
       Subnets: !Ref "PMPrivateSubnets"
+      SecurityGroups:
+        - Ref: "PMAPPELBSG"
+  ALBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn:
+            Ref: TargetGroup
+      LoadBalancerArn:
+          Ref: ApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
 
 # Output LoadBalancer
 Outputs:
   APPLoadBalancer:
     Description: "A reference to the Application Load Balancer"
-    Value: !Ref "APPLoadBalancer"
+    Value: !Ref "ApplicationLoadBalancer"
 
   APPLoadBalancerUrl:
     Description: "The URL of the ALB"
-    Value: !GetAtt "APPLoadBalancer.DNSName"
+    Value: !GetAtt "ApplicationLoadBalancer.DNSName"
+
+  rTargetGroup:
+    Description: "The resukt of TargetGroup"
+    Value: !Ref "TargetGroup"

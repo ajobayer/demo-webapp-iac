@@ -42,7 +42,7 @@ Resources:
         Status: "Enabled"
       LifecycleConfiguration:
         Rules:
-        - Id: "MyBackupArchive"
+        - Id: "DemoBackupArchive"
           Status: "Enabled"
           ExpirationInDays: '365' # Complete Disposal/Deletion of Data after 1 year
           Transition:
@@ -80,7 +80,7 @@ Resources:
         Status: "Enabled"
       LifecycleConfiguration:
         Rules:
-        - Id: "MyLoggingArchive"
+        - Id: "DemoLoggingArchive"
           Status: "Enabled"
           ExpirationInDays: '365' # Complete Disposal/Deletion of Data after 1 year
           Transition:

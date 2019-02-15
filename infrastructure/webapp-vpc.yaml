@@ -4,7 +4,7 @@
 #
 # NatGateway start charges immediately when its turn on. ~ ($0.045 per hour)
 # For more detail refer, https://aws.amazon.com/vpc/pricing/
-#
+
 ---
 AWSTemplateFormatVersion: "2010-09-09"
 Description: >
@@ -58,7 +58,7 @@ Resources:
       CidrBlock: !Ref "PMVpcCIDR"
       Tags:
       - Key: "Name"
-        Value: !Sub "${PMServerEnv}-MyVPC"
+        Value: !Sub "${PMServerEnv}-DemoVPC"
 
   VPCFlowLog:
     Type: "AWS::EC2::FlowLog"
@@ -79,7 +79,7 @@ Resources:
       MapPublicIpOnLaunch: "True"
       Tags:
       - Key: "Name"
-        Value: !Sub "${PMServerEnv}-${PMPublicSubnet1CIDR}-PublicSubnet1"
+        Value: !Sub "${PMServerEnv}-${PMPublicSubnet1CIDR}-PublicSubnetA"
 
   PublicSubnet2:
     Type: "AWS::EC2::Subnet"
@@ -90,7 +90,7 @@ Resources:
       MapPublicIpOnLaunch: "True"
       Tags:
       - Key: "Name"
-        Value: !Sub "${PMServerEnv}-${PMPublicSubnet2CIDR}-PublicSubnet2"
+        Value: !Sub "${PMServerEnv}-${PMPublicSubnet2CIDR}-PublicSubnetB"
 
 ######## Create Private Subnet #######
   PrivateSubnet1:
@@ -101,7 +101,7 @@ Resources:
       AvailabilityZone: !Select [ '0', !GetAZs ]
       Tags:
       - Key: "Name"
-        Value: !Sub "${PMServerEnv}-${PMPrivateSubnet1CIDR}-PrivateSubnet1"
+        Value: !Sub "${PMServerEnv}-${PMPrivateSubnet1CIDR}-PrivateSubnetA"
 
   PrivateSubnet2:
     Type: "AWS::EC2::Subnet"
@@ -111,184 +111,184 @@ Resources:
       AvailabilityZone: !Select [ '1', !GetAZs ]
       Tags:
       - Key: "Name"
-        Value: !Sub "${PMServerEnv}-${PMPrivateSubnet2CIDR}-PrivateSubnet2"
+        Value: !Sub "${PMServerEnv}-${PMPrivateSubnet2CIDR}-PrivateSubnetB"
 
 ######## Create Internet Gateway #######
-  MyInternetGateway:
+  DemoInternetGateway:
     Type: "AWS::EC2::InternetGateway"
     Properties:
       Tags:
       - Key: "Name"
-        Value: !Sub "${PMServerEnv}-MyIGW"
+        Value: !Sub "${PMServerEnv}-DemoIGW"
 
 ######## Attach Internet Gateway to VPC #######
   GatewayToInternet:
     Type: "AWS::EC2::VPCGatewayAttachment"
     Properties:
       VpcId: !Ref "VPC"
-      InternetGatewayId: !Ref "MyInternetGateway"
+      InternetGatewayId: !Ref "DemoInternetGateway"
 
 ######## Create Public Route Table #######
-  MyPublicRouteTable1:
+  DemoPublicRouteTable1:
     Type: "AWS::EC2::RouteTable"
     Properties:
       VpcId: !Ref "VPC"
       Tags:
       - Key: "Name"
-        Value: !Sub "${PMServerEnv}-MyPublicRoute1"
+        Value: !Sub "${PMServerEnv}-DemoPublicRoute1"
 
-  MyPublicRouteTable2:
+  DemoPublicRouteTable2:
     Type: "AWS::EC2::RouteTable"
     Properties:
       VpcId: !Ref "VPC"
       Tags:
       - Key: "Name"
-        Value: !Sub "${PMServerEnv}-MyPublicRoute2"
+        Value: !Sub "${PMServerEnv}-DemoPublicRoute2"
 
 ######## Create Private Route Table #######
-  MyPrivateRouteTable1:
+  DemoPrivateRouteTable1:
     Type: "AWS::EC2::RouteTable"
     Properties:
       VpcId: !Ref "VPC"
       Tags:
       - Key: "Name"
-        Value: !Sub "${PMServerEnv}-MyPrivateRoute1"
+        Value: !Sub "${PMServerEnv}-DemoPrivateRoute1"
 
-  MyPrivateRouteTable2:
+  DemoPrivateRouteTable2:
     Type: "AWS::EC2::RouteTable"
     Properties:
       VpcId: !Ref "VPC"
       Tags:
       - Key: "Name"
-        Value: !Sub "${PMServerEnv}-MyPrivateRoute2"
+        Value: !Sub "${PMServerEnv}-DemoPrivateRoute2"
 
 ######## Route-out Public Route Table to Internet Gateway (Internet connection)  #######
-  MyPublicRouteIGW1:
+  DemoPublicRouteIGW1:
     Type: "AWS::EC2::Route"
     DependsOn: "GatewayToInternet"
     Properties:
-      RouteTableId: !Ref "MyPublicRouteTable1"
+      RouteTableId: !Ref "DemoPublicRouteTable1"
       DestinationCidrBlock: "0.0.0.0/0"
-      GatewayId: !Ref "MyInternetGateway"
+      GatewayId: !Ref "DemoInternetGateway"
 
-  MyPublicRouteIGW2:
+  DemoPublicRouteIGW2:
     Type: "AWS::EC2::Route"
     DependsOn: "GatewayToInternet"
     Properties:
-      RouteTableId: !Ref "MyPublicRouteTable2"
+      RouteTableId: !Ref "DemoPublicRouteTable2"
       DestinationCidrBlock: "0.0.0.0/0"
-      GatewayId: !Ref "MyInternetGateway"
+      GatewayId: !Ref "DemoInternetGateway"
 
 ######## Associate Public Route Table with Public Subnet1 & Subnet2 #######
-  MyPublicSubnet1RouteTableAssociation:
+  DemoPublicSubnet1RouteTableAssociation:
     Type: "AWS::EC2::SubnetRouteTableAssociation"
     Properties:
       SubnetId: !Ref "PublicSubnet1"
-      RouteTableId: !Ref "MyPublicRouteTable1"
+      RouteTableId: !Ref "DemoPublicRouteTable1"
 
-  MyPublicSubnet2RouteTableAssociation:
+  DemoPublicSubnet2RouteTableAssociation:
     Type: "AWS::EC2::SubnetRouteTableAssociation"
     Properties:
       SubnetId: !Ref "PublicSubnet2"
-      RouteTableId: !Ref "MyPublicRouteTable2"
+      RouteTableId: !Ref "DemoPublicRouteTable2"
 
 ######## Associate Private Route Table with Private Subnet1 & Subnet2 #######
-  MyPrivateSubnet1RouteTableAssociation:
+  DemoPrivateSubnet1RouteTableAssociation:
     Type: "AWS::EC2::SubnetRouteTableAssociation"
     Properties:
       SubnetId: !Ref "PrivateSubnet1"
-      RouteTableId: !Ref "MyPrivateRouteTable1"
+      RouteTableId: !Ref "DemoPrivateRouteTable1"
 
-  MyPrivateSubnet2RouteTableAssociation:
+  DemoPrivateSubnet2RouteTableAssociation:
     Type: "AWS::EC2::SubnetRouteTableAssociation"
     Properties:
       SubnetId: !Ref "PrivateSubnet2"
-      RouteTableId: !Ref "MyPrivateRouteTable2"
+      RouteTableId: !Ref "DemoPrivateRouteTable2"
 
 ######## Create Nat Gateway in Public Subnet #######
 ######## Allocate Elastic IP to Nat Gateway #######
 ######## Target Private Route Table with Nat Gateway #######
 
-  MyNATGateway1EIP:
+  DemoNATGateway1EIP:
     Type: "AWS::EC2::EIP"
     DependsOn: "GatewayToInternet"
     Properties:
       Domain: "VPC"
 
-  MyNATGateway2EIP:
+  DemoNATGateway2EIP:
     Type: "AWS::EC2::EIP"
     DependsOn: "GatewayToInternet"
     Properties:
       Domain: "VPC"
   
-  MyNATGateway1:
+  DemoNATGateway1:
     Type: "AWS::EC2::NatGateway"
     DependsOn: "GatewayToInternet"
     Properties:
       AllocationId:
         Fn::GetAtt:
-        - "MyNATGateway1EIP"
+        - "DemoNATGateway1EIP"
         - "AllocationId"  
       SubnetId: !Ref "PublicSubnet1"
 
-  MyNATGateway2:
+  DemoNATGateway2:
     Type: "AWS::EC2::NatGateway"
     DependsOn: "GatewayToInternet"
     Properties:
       AllocationId:
         Fn::GetAtt:
-        - "MyNATGateway2EIP"
+        - "DemoNATGateway2EIP"
         - "AllocationId"  
       SubnetId: !Ref "PublicSubnet2"
 
-  MyNatPrivateRoute1:
+  DemoNatPrivateRoute1:
     Type: "AWS::EC2::Route"
     Properties:
-      RouteTableId: !Ref "MyPrivateRouteTable1"
+      RouteTableId: !Ref "DemoPrivateRouteTable1"
       DestinationCidrBlock: "0.0.0.0/0"
-      NatGatewayId: !Ref "MyNATGateway1"
+      NatGatewayId: !Ref "DemoNATGateway1"
 
-  MyNatPrivateRoute2:
+  DemoNatPrivateRoute2:
     Type: "AWS::EC2::Route"
     Properties:
-      RouteTableId: !Ref "MyPrivateRouteTable2"
+      RouteTableId: !Ref "DemoPrivateRouteTable2"
       DestinationCidrBlock: "0.0.0.0/0"
-      NatGatewayId: !Ref "MyNATGateway2"
+      NatGatewayId: !Ref "DemoNATGateway2"
 
 ######## Create Custom Network ACL #######
-  MyNetworkACL:
+  DemoNetworkACL:
     Type: "AWS::EC2::NetworkAcl"
     Properties:
       VpcId: !Ref "VPC"
       Tags:
         - Key: "Name"
-          Value: !Sub "${PMServerEnv}-MyNetworkACL"
+          Value: !Sub "${PMServerEnv}-DemoNetworkACL"
 
 ######## Associate Public Subnet to Network ACL #######
-  MyPublicSubnet1NetworkAclAssociation:
+  DemoPublicSubnet1NetworkAclAssociation:
     Type: "AWS::EC2::SubnetNetworkAclAssociation"
     Properties:
       SubnetId: !Ref "PublicSubnet1"
-      NetworkAclId: !Ref "MyNetworkACL"
+      NetworkAclId: !Ref "DemoNetworkACL"
 
-  MyPublicSubnet2NetworkAclAssociation:
+  DemoPublicSubnet2NetworkAclAssociation:
     Type: "AWS::EC2::SubnetNetworkAclAssociation"
     Properties:
       SubnetId: !Ref "PublicSubnet2"
-      NetworkAclId: !Ref "MyNetworkACL"
+      NetworkAclId: !Ref "DemoNetworkACL"
 
 ######## Associate Private Subnet to Network ACL #######
-  MyPrivateSubnet1NetworkAclAssociation:
+  DemoPrivateSubnet1NetworkAclAssociation:
     Type: "AWS::EC2::SubnetNetworkAclAssociation"
     Properties:
       SubnetId: !Ref "PrivateSubnet1"
-      NetworkAclId: !Ref "MyNetworkACL"
+      NetworkAclId: !Ref "DemoNetworkACL"
 
-  MyPrivateSubnet2NetworkAclAssociation:
+  DemoPrivateSubnet2NetworkAclAssociation:
     Type: "AWS::EC2::SubnetNetworkAclAssociation"
     Properties:
       SubnetId: !Ref "PrivateSubnet2"
-      NetworkAclId: !Ref "MyNetworkACL"
+      NetworkAclId: !Ref "DemoNetworkACL"
 
 
 Outputs: 
@@ -299,9 +299,9 @@ Outputs:
     Export:
       Name: !Sub "${PMServerEnv}-VPC"
 
-  MyNetworkACL: 
+  DemoNetworkACL: 
     Description: "A reference to the created VPC"
-    Value: !Ref "MyNetworkACL"
+    Value: !Ref "DemoNetworkACL"
 
   PublicSubnets:
     Description: "A list of the public subnets"

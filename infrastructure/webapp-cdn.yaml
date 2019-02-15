@@ -11,12 +11,12 @@ Description: >
 
 Resources:
 
-  MyCDN:
+  DemoCDN:
     Type: "AWS::CloudFront::Distribution"
     Properties:
       DistributionConfig:
         Origins:
-        - Id: "MyOrigin"
+        - Id: "DemoOrigin"
           DomainName:
             Fn::ImportValue: !Sub "${AWS::StackName}-S3CloudFrontDN"
           S3OriginConfig: {}
@@ -24,7 +24,7 @@ Resources:
         Aliases:
         - Fn::ImportValue: !Sub "${AWS::StackName}-PMCDNDOMAIN"
         DefaultCacheBehavior:
-          TargetOriginId: "MyOrigin"
+          TargetOriginId: "DemoOrigin"
           ForwardedValues:
             QueryString: 'false'
           ViewerProtocolPolicy: "allow-all"
@@ -52,16 +52,16 @@ Resources:
         Type: 'CNAME'
         TTL: '300'
         ResourceRecords:
-        - !GetAtt "MyCDN.DomainName"
+        - !GetAtt "DemoCDN.DomainName"
 
 
 Outputs:
 
-  MyCDN:
+  DemoCDN:
     Description: "CDN Reference Id"
-    Value: !Ref "MyCDN"
+    Value: !Ref "DemoCDN"
 
-  MyCDNUrl:
+  DemoCDNUrl:
     Description: "Static Server Site"
     Value:
       Fn::Join:

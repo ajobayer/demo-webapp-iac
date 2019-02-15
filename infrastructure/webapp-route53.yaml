@@ -32,7 +32,7 @@ Resources:
     Type: "AWS::Route53::RecordSetGroup"
     Properties:
       HostedZoneName: !Sub "${PMHostedZone}."
-      Comment: "Zone apex alias targeted to myELB LoadBalancer."
+      Comment: "Zone apex alias targeted to DemoELB LoadBalancer."
       RecordSets:
       - Name: !Sub "${PMWEBDOMAIN}."
         Type: 'A'

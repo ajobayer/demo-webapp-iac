@@ -1,7 +1,7 @@
 ---
 AWSTemplateFormatVersion: "2010-09-09"
 Description: >
-    This is a master template to create a Web Application Architecture.
+    This is a master template creating 3-tire web based applicaiton
     The following task will be built in this template.
     - Custom VPC with Private(AZ1 & AZ2) and Public(AZ1 & AZ2)  Subnet spread across 2 Availability Zones. Spanning an AWS region
     - Internet Gateway, with a default route on the public subnets.
@@ -10,8 +10,7 @@ Description: >
     - Elastic Load Balancer (WebELB & AppELB)
     - CloudWatch for resource and log monitoring
     - S3 for log storage
-    - 
-    - 
+
  
 ###############################################################################################################
 
@@ -23,12 +22,12 @@ Parameters:
     Type: "String"
 
   PMKeyName:
-    Default: "AdvancedCFN"
-    Description: "Enter an existing EC2 KeyPair. Default is MyEC2Key."
+    Default: "DemoWebApp"
+    Description: "Enter an existing EC2 KeyPair. Default is DemoWebApp."
     Type: "String"
 
   PMTemplateURL:
-    Default: "https://s3.amazonaws.com/webapp-deployment-jobs"
+    Default: "https://s3.amazonaws.com/webapp-deployment-ajobayer"
     Description: "Enter an existing S3 Cloudformation Bucket."
     Type: "String"
 
@@ -43,8 +42,7 @@ Parameters:
     Default: "t2.micro"
     AllowedValues:
       - "t2.micro"
-      - "m1.small"
-
+      - "t2.small"
 
 ###############################################################################################################
 #
@@ -79,43 +77,33 @@ Mappings:
       AStorage: "GLACIER"
       # Update with your own cert ARN HERE!
       # Assuming you have already upload to AWS Certificate Manager
-      #CertARN: "arn:aws:acm:us-east-1:370888776060:certificate/eec1f4f2-2632-4d20-bd8a-fbfbcdb15920"
+      #CertARN: "arn:aws:acm:us-east-1:<aws-a/c-id>:certificate/eec1f4f2-2632-4d20-bd8a-fbfbcdb15920"
 
     us-east-2:
       AMI: "ami-c55673a0"
       AStorage: "GLACIER"
-      #CertARN: "arn:aws:acm:us-east-2:370888776060:certificate/893d447c-4f33-4585-9a48-78cade65e46d"
+      #CertARN: "arn:aws:acm:us-east-2:<aws-a/c-id>:certificate/893d447c-4f33-4585-9a48-78cade65e46d"
 
     us-west-1:
       AMI: "ami-165a0876"
       #AStorage: "GLACIER"
-      #CertARN: "arn:aws:acm:us-west-1:370888776060:certificate/d05918e0-7646-4fc5-8405-025732b31d57"
+      #CertARN: "arn:aws:acm:us-west-1:<aws-a/c-id>:certificate/d05918e0-7646-4fc5-8405-025732b31d57"
 
     us-west-2:
       AMI: "ami-f173cc91"
       #AStorage: "GLACIER"
-      #CertARN: "arn:aws:acm:us-west-2:370888776060:certificate/97648617-e7ab-4628-ba08-1d2f0ffce058"
-
-    ap-northeast-1:
-      AMI: "ami-56d4ad31"
-      #AStorage: "GLACIER"
-      #CertARN: "arn:aws:acm:us-east-1:370888776060:certificate/4696461e-df6b-4000-963b-68c1628f0bac"
-
-    ap-southeast-1:
-      AMI: "ami-dc9339bf"
-      #AStorage: "STANDARD_IA"
-      #CertARN: "arn:aws:acm:ap-southeast-1:370888776060:certificate/b06aa290-bb09-4fee-9e09-864c4cc8cc98"
+      #CertARN: "arn:aws:acm:us-west-2:<aws-a/c-id>:certificate/97648617-e7ab-4628-ba08-1d2f0ffce058"
 
     ap-southeast-2:
       AMI: "ami-1c47407f"
-      #AStorage: "GLACIER"
-      #CertARN: "arn:aws:acm:us-east-1:370888776060:certificate/4696461e-df6b-4000-963b-68c1628f0bac"
+      AStorage: "GLACIER"
+      #CertARN: "arn:aws:acm:us-east-1:<aws-a/c-id>:certificate/4696461e-df6b-4000-963b-68c1628f0bac"
 
 ###############################################################################################################
 
 Resources:
 
-  MyIAMRole:
+  DemoIAMRole:
     Type: "AWS::CloudFormation::Stack"
     Properties:
       TemplateURL: !Sub "${PMTemplateURL}/webapp-iam.yaml"
@@ -123,7 +111,7 @@ Resources:
       Parameters:
         PMServerEnv: !Ref "AWS::StackName"
 
-  MyS3Bucket:
+  DemoS3Bucket:
     Type: "AWS::CloudFormation::Stack"
     Properties:
       TemplateURL: !Sub "${PMTemplateURL}/webapp-s3bucket.yaml"
@@ -132,7 +120,7 @@ Resources:
         PMServerEnv: !Ref "AWS::StackName"
         PMRegionAStorage: !FindInMap ["RegionMap", !Ref "AWS::Region", "AStorage"]
 
-  MyVPC:
+  DemoVPC:
     Type: "AWS::CloudFormation::Stack"
     Properties:
       TemplateURL: !Sub "${PMTemplateURL}/webapp-vpc.yaml"
@@ -144,9 +132,9 @@ Resources:
         PMPublicSubnet2CIDR: "10.0.2.0/24"
         PMPrivateSubnet1CIDR: "10.0.3.0/24"
         PMPrivateSubnet2CIDR: "10.0.4.0/24"
-        PMFlowLogRole: !GetAtt "MyIAMRole.Outputs.VPCFlowLogRoleArn"
+        PMFlowLogRole: !GetAtt "DemoIAMRole.Outputs.VPCFlowLogRoleArn"
 
-  MySecurityGroup:
+  DemoSecurityGroup:
     Type: "AWS::CloudFormation::Stack"
     Properties:
       TemplateURL: !Sub "${PMTemplateURL}/webapp-securitygroup.yaml"
@@ -154,40 +142,41 @@ Resources:
       Parameters:
         PMServerEnv: !Ref "AWS::StackName"
         PMOWNIP: !Ref "PMOWNIP"
-        PMVPC: !GetAtt "MyVPC.Outputs.VPC"
-        PMNACL: !GetAtt "MyVPC.Outputs.MyNetworkACL"
+        PMVPC: !GetAtt "DemoVPC.Outputs.VPC"
+        PMNACL: !GetAtt "DemoVPC.Outputs.DemoNetworkACL"
 
-  MyRDS:
+  DemoRDS:
     Type: "AWS::CloudFormation::Stack"
     DependsOn:
-    - "MySecurityGroup"
+    - "DemoSecurityGroup"
     Properties:
       TemplateURL: !Sub "${PMTemplateURL}/webapp-rds.yaml"
-      TimeoutInMinutes: '5'
+      TimeoutInMinutes: '15'
       Parameters:
         PMServerEnv: !Ref "AWS::StackName"
         DatabaseUser: "root1234"
         DatabasePassword: "root1234"
         #DatabaseName: !Sub "${AWS::StackName}db"
-        DatabaseName: "test"
+        DatabaseName: "DemosqlWebAppDB"
         DatabaseSize: '5'
         DatabaseEngine: "mysql"
         DatabaseInstanceClass: "db.t2.micro"
-        PMRDSSG: !GetAtt "MySecurityGroup.Outputs.RDSSG"
-        PMPrivateSubnets: !GetAtt "MyVPC.Outputs.PrivateSubnets"
+        PMRDSSG: !GetAtt "DemoSecurityGroup.Outputs.RDSSG"
+        PMPrivateSubnets: !GetAtt "DemoVPC.Outputs.PrivateSubnets"
 
-  MyAPPELB:
+  DemoAppALB:
     Type: "AWS::CloudFormation::Stack"
     Properties:
       TemplateURL: !Sub "${PMTemplateURL}/webapp-elb-appserver.yaml"
       TimeoutInMinutes: '5'
       Parameters:
         PMServerEnv: !Ref "AWS::StackName"
-        PMAPPELBSG: !GetAtt "MySecurityGroup.Outputs.APPELBSG"
-        PMS3Logging: !GetAtt "MyS3Bucket.Outputs.S3Logging"
-        PMPrivateSubnets: !GetAtt "MyVPC.Outputs.PrivateSubnets"
+        PMVPC: !GetAtt "DemoVPC.Outputs.VPC"
+        PMAPPELBSG: !GetAtt "DemoSecurityGroup.Outputs.APPELBSG"
+        PMS3Logging: !GetAtt "DemoS3Bucket.Outputs.S3Logging"
+        PMPrivateSubnets: !GetAtt "DemoVPC.Outputs.PrivateSubnets"
 
-  MyAPPAutoScaling:
+  DemoAPPAutoScaling:
     Type: "AWS::CloudFormation::Stack"
     Properties:
       TemplateURL: !Sub "${PMTemplateURL}/webapp-autoscaling-appserver.yaml"
@@ -197,34 +186,34 @@ Resources:
         PMKeyName: !Ref "PMKeyName"
         PMInstanceType: !Ref "PMInstanceType"
         PMRegionAMI: !FindInMap ["RegionMap", !Ref "AWS::Region", "AMI"]
-        PMAPPHostSG : !GetAtt "MySecurityGroup.Outputs.APPHostSG"
-        PMAPPLoadBalancer: !GetAtt "MyAPPELB.Outputs.APPLoadBalancer"
-        PMIAMS3CWInstanceProfile: !GetAtt "MyIAMRole.Outputs.IAMS3CWInstanceProfile"
-        PMPrivateSubnets: !GetAtt "MyVPC.Outputs.PrivateSubnets"
+        PMAPPHostSG : !GetAtt "DemoSecurityGroup.Outputs.APPHostSG"
+        PMAPPLoadBalancer: !GetAtt "DemoAppALB.Outputs.APPLoadBalancer"
+        PMIAMS3CWInstanceProfile: !GetAtt "DemoIAMRole.Outputs.IAMS3CWInstanceProfile"
+        PMPrivateSubnets: !GetAtt "DemoVPC.Outputs.PrivateSubnets"
         PMASMIN: !FindInMap ["EnvMap", !Ref "AWS::StackName", "ASMIN"]
         PMASMAX: !FindInMap ["EnvMap", !Ref "AWS::StackName", "ASMAX"]
         PMASDES: !FindInMap ["EnvMap", !Ref "AWS::StackName", "ASDES"]
         #PMWEBDOMAIN: !FindInMap ["EnvMap", !Ref "AWS::StackName", "WEBDOMAIN"]
-
-  MyWEBELB:
+        pTargetGroup: !GetAtt "DemoAppALB.Outputs.rTargetGroup"
+  DemoWEBELB:
     Type: "AWS::CloudFormation::Stack"
     DependsOn:
-    - "MyAPPAutoScaling"
+    - "DemoAPPAutoScaling"
     Properties:
       TemplateURL: !Sub "${PMTemplateURL}/webapp-elb-webserver.yaml"
       TimeoutInMinutes: '5'
       Parameters:
         PMServerEnv: !Ref "AWS::StackName"
         #PMDomain1CertARN: !FindInMap ["RegionMap", !Ref "AWS::Region", "CertARN"]
-        PMWEBELBSG: !GetAtt "MySecurityGroup.Outputs.WEBELBSG"
-        PMPublicSubnets: !GetAtt "MyVPC.Outputs.PublicSubnets"
-        PMS3Backup: !GetAtt "MyS3Bucket.Outputs.S3Backup"
-        PMS3Logging: !GetAtt "MyS3Bucket.Outputs.S3Logging"
+        PMWEBELBSG: !GetAtt "DemoSecurityGroup.Outputs.WEBELBSG"
+        PMPublicSubnets: !GetAtt "DemoVPC.Outputs.PublicSubnets"
+        PMS3Backup: !GetAtt "DemoS3Bucket.Outputs.S3Backup"
+        PMS3Logging: !GetAtt "DemoS3Bucket.Outputs.S3Logging"
 
-  MyWEBAutoScaling:
+  DemoWEBAutoScaling:
     Type: "AWS::CloudFormation::Stack"
     DependsOn:
-    - "MyWEBELB"
+    - "DemoWEBELB"
     Properties:
       TemplateURL: !Sub "${PMTemplateURL}/webapp-autoscaling-webserver.yaml"
       TimeoutInMinutes: '5'
@@ -233,41 +222,41 @@ Resources:
         PMKeyName: !Ref "PMKeyName"
         PMInstanceType: !Ref "PMInstanceType"
         PMRegionAMI: !FindInMap ["RegionMap", !Ref "AWS::Region", "AMI"]
-        PMProxyHostSG: !GetAtt "MySecurityGroup.Outputs.ProxyHostSG"
-        PMWEBLoadBalancer: !GetAtt "MyWEBELB.Outputs.WEBLoadBalancer"
-        PMIAMS3CWInstanceProfile: !GetAtt "MyIAMRole.Outputs.IAMS3CWInstanceProfile"
-        PMPublicSubnets: !GetAtt "MyVPC.Outputs.PublicSubnets"
-        PMAPPLoadBalancerUrl: !GetAtt "MyAPPELB.Outputs.APPLoadBalancerUrl"
+        PMProxyHostSG: !GetAtt "DemoSecurityGroup.Outputs.ProxyHostSG"
+        PMWEBLoadBalancer: !GetAtt "DemoWEBELB.Outputs.WEBLoadBalancer"
+        PMIAMS3CWInstanceProfile: !GetAtt "DemoIAMRole.Outputs.IAMS3CWInstanceProfile"
+        PMPublicSubnets: !GetAtt "DemoVPC.Outputs.PublicSubnets"
+        PMAPPLoadBalancerUrl: !GetAtt "DemoAppALB.Outputs.APPLoadBalancerUrl"
         PMASMIN: !FindInMap ["EnvMap", !Ref "AWS::StackName", "ASMIN"]
         PMASMAX: !FindInMap ["EnvMap", !Ref "AWS::StackName", "ASMAX"]
         PMASDES: !FindInMap ["EnvMap", !Ref "AWS::StackName", "ASDES"]
         #PMWEBDOMAIN: !FindInMap ["EnvMap", !Ref "AWS::StackName", "WEBDOMAIN"]
 
-  MyCloudWatch:
+  DemoCloudWatch:
     Type: "AWS::CloudFormation::Stack"
     DependsOn:
-    - "MyWEBAutoScaling"
+    - "DemoWEBAutoScaling"
     Properties:
       TemplateURL: !Sub "${PMTemplateURL}/webapp-cloudwatch.yaml"
       TimeoutInMinutes: '5'
       Parameters:
-        PMWebScalingGroup: !GetAtt "MyWEBAutoScaling.Outputs.WebScalingGroup"
-        PMWebServerScaleUpPolicy: !GetAtt "MyWEBAutoScaling.Outputs.WebServerScaleUpPolicy"
-        PMWebServerScaleDownPolicy: !GetAtt "MyWEBAutoScaling.Outputs.WebServerScaleDownPolicy"
-        PMAppScalingGroup: !GetAtt "MyAPPAutoScaling.Outputs.AppScalingGroup"
-        PMAPPServerScaleUpPolicy: !GetAtt "MyAPPAutoScaling.Outputs.APPServerScaleUpPolicy"
-        PMAPPServerScaleDownPolicy: !GetAtt "MyAPPAutoScaling.Outputs.APPServerScaleDownPolicy"
+        PMWebScalingGroup: !GetAtt "DemoWEBAutoScaling.Outputs.WebScalingGroup"
+        PMWebServerScaleUpPolicy: !GetAtt "DemoWEBAutoScaling.Outputs.WebServerScaleUpPolicy"
+        PMWebServerScaleDownPolicy: !GetAtt "DemoWEBAutoScaling.Outputs.WebServerScaleDownPolicy"
+        PMAppScalingGroup: !GetAtt "DemoAPPAutoScaling.Outputs.AppScalingGroup"
+        PMAPPServerScaleUpPolicy: !GetAtt "DemoAPPAutoScaling.Outputs.APPServerScaleUpPolicy"
+        PMAPPServerScaleDownPolicy: !GetAtt "DemoAPPAutoScaling.Outputs.APPServerScaleDownPolicy"
 
-  # MyDNS:
+  # DemoDNS:
   #   Type: "AWS::CloudFormation::Stack"
   #   DependsOn:
-  #   - "MyWEBAutoScaling"
+  #   - "DemoWEBAutoScaling"
   #   Properties:
   #     TemplateURL: !Sub "${PMTemplateURL}/webapp-route53.yaml"
   #     TimeoutInMinutes: '5'
   #     Parameters:
-  #       PMWEBLBDNSName: !GetAtt "MyWEBELB.Outputs.WEBLBDNSName"
-  #       PMWEBLBHostedZoneId: !GetAtt "MyWEBELB.Outputs.WEBLBHostedZoneId"
+  #       PMWEBLBDNSName: !GetAtt "DemoWEBELB.Outputs.WEBLBDNSName"
+  #       PMWEBLBHostedZoneId: !GetAtt "DemoWEBELB.Outputs.WEBLBHostedZoneId"
   #       PMWEBDOMAIN: !FindInMap ["EnvMap", !Ref "AWS::StackName", "WEBDOMAIN"]
   #       PMHostedZone: !Ref "PMHostedZone"
 
@@ -275,7 +264,7 @@ Resources:
 Outputs:
   Webserver:
     Description: "Web Server Site"
-    Value:  !Join ["", ["http://", !GetAtt "MyWEBELB.Outputs.WEBLBDNSName", ""]]
+    Value:  !Join ["", ["http://", !GetAtt "DemoWEBELB.Outputs.WEBLBDNSName", ""]]
 
   # Own Certs
   # https://cloudonaut.io/pitfall-acm-certificate-cloudfront-cloudformation/

@@ -17,77 +17,78 @@ Parameters:
       - "dev"
       - "staging"
       - "prod"
+  PMVPC:
+    Description: "VPC to launch instances into"
+    Type: "AWS::EC2::VPC::Id"
 
-  PMWEBELBSG:
+  PMAPPELBSG:
     Description: "Select the Security Group to use for the ELB"
     Type: "AWS::EC2::SecurityGroup::Id"
 
-  PMPublicSubnets:
+  PMPrivateSubnets:
     Description: "Subnets to launch instances into"
     Type: "List<AWS::EC2::Subnet::Id>"
 
-  PMS3Backup:
-    Description: "S3 Backup Bucket Name"
-    Type: "String"
+  # PMS3Backup:
+  #   Description: "S3 Backup Bucket Name"
+  #   Type: "String"
 
-  PMS3Logging:
-    Description: "S3 Logging Bucket Name"
-    Type: "String"
+  # PMS3Logging:
+  #   Description: "S3 Logging Bucket Name"
+  #   Type: "String"
 
   # PMDomain1CertARN:
-  #   Description: "ARN for my domain name"
+  #   Description: "ARN for Demo domain name"
   #   Type: "String"
 
 Resources:
-
-  WEBLoadBalancer:
-    Type: "AWS::ElasticLoadBalancing::LoadBalancer"
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      ConnectionDrainingPolicy:
-        Enabled: "true"
-        Timeout: "30"
-      CrossZone: "true"
-      AccessLoggingPolicy:
-        EmitInterval: '5'
-        Enabled: 'True'
-        S3BucketName: !Ref "PMS3Logging"
-        S3BucketPrefix: "ELBLogs"
-      HealthCheck:
-        HealthyThreshold: '6'
-        Interval: '30'
-        Target: "TCP:80"
-        Timeout: '5'
-        UnhealthyThreshold: '8'
-      LoadBalancerName: !Sub "${PMServerEnv}-WebELB"
-      Listeners:
-      - InstancePort: '80'
-        InstanceProtocol: "HTTP"
-        LoadBalancerPort: '80'
-        Protocol: "HTTP"
-      # - LoadBalancerPort: '443'
-      #   Protocol: "HTTPS"
-      #   InstancePort: '80'
-      #   InstanceProtocol: "HTTP"
-      #   # SSLCertificateId: !Ref "PMDomain1CertARN"
-      #   PolicyNames:
-      #   - !Sub "${PMServerEnv}-SSLNegotiationPolicy"
-
-      Scheme: "internet-facing"
+      HealthCheckIntervalSeconds: 30
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 4
+      Matcher:
+        HttpCode: '200'
+      Name: !Sub "${PMServerEnv}-WebAlbTargets"
+      Port: 80
+      Protocol: HTTP
+      VpcId: !Ref "PMVPC"
+  WebLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub "${PMServerEnv}-WebALB"
+      Scheme: internet-facing
+      Subnets: !Ref "PMPrivateSubnets"
       SecurityGroups:
-      - Ref: "PMWEBELBSG"
-      Subnets:
-        Ref: "PMPublicSubnets"
+        - Ref: "PMAPPELBSG"
+  ALBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn:
+            Ref: TargetGroup
+      LoadBalancerArn:
+          Ref: WebLoadBalancer
+      Port: 80
+      Protocol: HTTP
 
 # Output LoadBalancer
 Outputs:
   WEBLoadBalancer:
     Description: "A reference to the Web Load Balancer"
-    Value: !Ref "WEBLoadBalancer"
+    Value: !Ref "WebLoadBalancer"
 
   WEBLBDNSName:
     Description: "The URL of the Web Load Balancer"
-    Value: !GetAtt "WEBLoadBalancer.DNSName"
+    Value: !GetAtt "WebLoadBalancer.DNSName"
 
-  WEBLBHostedZoneId:
-    Description: "The CanonicalHostedZoneNameID of the Web Load Balancer"
-    Value: !GetAtt "WEBLoadBalancer.CanonicalHostedZoneNameID"
+  # WEBLBHostedZoneId:
+  #   Description: "The CanonicalHostedZoneNameID of the Web Load Balancer"
+  #   Value: !GetAtt "WebLoadBalancer.CanonicalHostedZoneNameID"
+
+  rTargetGroup:
+    Description: "The resukt of TargetGroup"
+    Value: !Ref "TargetGroup"
