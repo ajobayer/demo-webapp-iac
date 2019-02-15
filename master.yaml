@@ -7,13 +7,12 @@ Description: >
     - Internet Gateway, with a default route on the public subnets.
     - NAT Gateways (In one Public AZ) and route to private subnets.
     - AutoScalingGroup (WebServer & AppServer)
-    - Elastic Load Balancer (WebELB & AppELB)
+    - Elastic Load Balancer (WebALB & AppALB)
     - CloudWatch for resource and log monitoring
     - S3 for log storage
 
- 
-###############################################################################################################
 
+###############################################################################################################
 Parameters:
 
   PMOWNIP:
@@ -28,7 +27,7 @@ Parameters:
 
   PMTemplateURL:
     Default: "https://s3.amazonaws.com/webapp-deployment-ajobayer"
-    Description: "Enter an existing S3 Cloudformation Bucket."
+    Description: "Enter an existing S3 bucket where all the nested Cloudformation files are there."
     Type: "String"
 
   # PMHostedZone:
@@ -45,7 +44,6 @@ Parameters:
       - "t2.small"
 
 ###############################################################################################################
-#
 # For any additional region & Env, you can add by yourself below.
 Mappings:
   EnvMap:
@@ -100,7 +98,6 @@ Mappings:
       #CertARN: "arn:aws:acm:us-east-1:<aws-a/c-id>:certificate/4696461e-df6b-4000-963b-68c1628f0bac"
 
 ###############################################################################################################
-
 Resources:
 
   DemoIAMRole:
@@ -167,16 +164,16 @@ Resources:
   DemoAppALB:
     Type: "AWS::CloudFormation::Stack"
     Properties:
-      TemplateURL: !Sub "${PMTemplateURL}/webapp-elb-appserver.yaml"
+      TemplateURL: !Sub "${PMTemplateURL}/webapp-alb-appserver.yaml"
       TimeoutInMinutes: '5'
       Parameters:
         PMServerEnv: !Ref "AWS::StackName"
         PMVPC: !GetAtt "DemoVPC.Outputs.VPC"
-        PMAPPELBSG: !GetAtt "DemoSecurityGroup.Outputs.APPELBSG"
+        PMAPPALBSG: !GetAtt "DemoSecurityGroup.Outputs.WebAppALBSG"
         PMS3Logging: !GetAtt "DemoS3Bucket.Outputs.S3Logging"
         PMPrivateSubnets: !GetAtt "DemoVPC.Outputs.PrivateSubnets"
 
-  DemoAPPAutoScaling:
+  DemoAppAutoScaling:
     Type: "AWS::CloudFormation::Stack"
     Properties:
       TemplateURL: !Sub "${PMTemplateURL}/webapp-autoscaling-appserver.yaml"
@@ -186,7 +183,7 @@ Resources:
         PMKeyName: !Ref "PMKeyName"
         PMInstanceType: !Ref "PMInstanceType"
         PMRegionAMI: !FindInMap ["RegionMap", !Ref "AWS::Region", "AMI"]
-        PMAPPHostSG : !GetAtt "DemoSecurityGroup.Outputs.APPHostSG"
+        PMAPPHostSG : !GetAtt "DemoSecurityGroup.Outputs.WebAppHostSG"
         PMAPPLoadBalancer: !GetAtt "DemoAppALB.Outputs.APPLoadBalancer"
         PMIAMS3CWInstanceProfile: !GetAtt "DemoIAMRole.Outputs.IAMS3CWInstanceProfile"
         PMPrivateSubnets: !GetAtt "DemoVPC.Outputs.PrivateSubnets"
@@ -195,25 +192,25 @@ Resources:
         PMASDES: !FindInMap ["EnvMap", !Ref "AWS::StackName", "ASDES"]
         #PMWEBDOMAIN: !FindInMap ["EnvMap", !Ref "AWS::StackName", "WEBDOMAIN"]
         pTargetGroup: !GetAtt "DemoAppALB.Outputs.rTargetGroup"
-  DemoWEBELB:
+  DemoWebALB:
     Type: "AWS::CloudFormation::Stack"
     DependsOn:
-    - "DemoAPPAutoScaling"
+    - "DemoAppAutoScaling"
     Properties:
-      TemplateURL: !Sub "${PMTemplateURL}/webapp-elb-webserver.yaml"
+      TemplateURL: !Sub "${PMTemplateURL}/webapp-alb-webserver.yaml"
       TimeoutInMinutes: '5'
       Parameters:
         PMServerEnv: !Ref "AWS::StackName"
         #PMDomain1CertARN: !FindInMap ["RegionMap", !Ref "AWS::Region", "CertARN"]
-        PMWEBELBSG: !GetAtt "DemoSecurityGroup.Outputs.WEBELBSG"
+        PMWEBALBSG: !GetAtt "DemoSecurityGroup.Outputs.WebAppALBSG"
         PMPublicSubnets: !GetAtt "DemoVPC.Outputs.PublicSubnets"
         PMS3Backup: !GetAtt "DemoS3Bucket.Outputs.S3Backup"
         PMS3Logging: !GetAtt "DemoS3Bucket.Outputs.S3Logging"
 
-  DemoWEBAutoScaling:
+  DemoWebAutoScaling:
     Type: "AWS::CloudFormation::Stack"
     DependsOn:
-    - "DemoWEBELB"
+    - "DemoWebALB"
     Properties:
       TemplateURL: !Sub "${PMTemplateURL}/webapp-autoscaling-webserver.yaml"
       TimeoutInMinutes: '5'
@@ -222,8 +219,8 @@ Resources:
         PMKeyName: !Ref "PMKeyName"
         PMInstanceType: !Ref "PMInstanceType"
         PMRegionAMI: !FindInMap ["RegionMap", !Ref "AWS::Region", "AMI"]
-        PMProxyHostSG: !GetAtt "DemoSecurityGroup.Outputs.ProxyHostSG"
-        PMWEBLoadBalancer: !GetAtt "DemoWEBELB.Outputs.WEBLoadBalancer"
+        PMProxyHostSG: !GetAtt "DemoSecurityGroup.Outputs.WebAppHostSG"
+        PMWEBLoadBalancer: !GetAtt "DemoWebALB.Outputs.WEBLoadBalancer"
         PMIAMS3CWInstanceProfile: !GetAtt "DemoIAMRole.Outputs.IAMS3CWInstanceProfile"
         PMPublicSubnets: !GetAtt "DemoVPC.Outputs.PublicSubnets"
         PMAPPLoadBalancerUrl: !GetAtt "DemoAppALB.Outputs.APPLoadBalancerUrl"
@@ -235,28 +232,28 @@ Resources:
   DemoCloudWatch:
     Type: "AWS::CloudFormation::Stack"
     DependsOn:
-    - "DemoWEBAutoScaling"
+    - "DemoWebAutoScaling"
     Properties:
       TemplateURL: !Sub "${PMTemplateURL}/webapp-cloudwatch.yaml"
       TimeoutInMinutes: '5'
       Parameters:
-        PMWebScalingGroup: !GetAtt "DemoWEBAutoScaling.Outputs.WebScalingGroup"
-        PMWebServerScaleUpPolicy: !GetAtt "DemoWEBAutoScaling.Outputs.WebServerScaleUpPolicy"
-        PMWebServerScaleDownPolicy: !GetAtt "DemoWEBAutoScaling.Outputs.WebServerScaleDownPolicy"
-        PMAppScalingGroup: !GetAtt "DemoAPPAutoScaling.Outputs.AppScalingGroup"
-        PMAPPServerScaleUpPolicy: !GetAtt "DemoAPPAutoScaling.Outputs.APPServerScaleUpPolicy"
-        PMAPPServerScaleDownPolicy: !GetAtt "DemoAPPAutoScaling.Outputs.APPServerScaleDownPolicy"
+        PMWebScalingGroup: !GetAtt "DemoWebAutoScaling.Outputs.WebScalingGroup"
+        PMWebServerScaleUpPolicy: !GetAtt "DemoWebAutoScaling.Outputs.WebServerScaleUpPolicy"
+        PMWebServerScaleDownPolicy: !GetAtt "DemoWebAutoScaling.Outputs.WebServerScaleDownPolicy"
+        PMAppScalingGroup: !GetAtt "DemoAppAutoScaling.Outputs.AppScalingGroup"
+        PMAPPServerScaleUpPolicy: !GetAtt "DemoAppAutoScaling.Outputs.APPServerScaleUpPolicy"
+        PMAPPServerScaleDownPolicy: !GetAtt "DemoAppAutoScaling.Outputs.APPServerScaleDownPolicy"
 
   # DemoDNS:
   #   Type: "AWS::CloudFormation::Stack"
   #   DependsOn:
-  #   - "DemoWEBAutoScaling"
+  #   - "DemoWebAutoScaling"
   #   Properties:
   #     TemplateURL: !Sub "${PMTemplateURL}/webapp-route53.yaml"
   #     TimeoutInMinutes: '5'
   #     Parameters:
-  #       PMWEBLBDNSName: !GetAtt "DemoWEBELB.Outputs.WEBLBDNSName"
-  #       PMWEBLBHostedZoneId: !GetAtt "DemoWEBELB.Outputs.WEBLBHostedZoneId"
+  #       PMWEBLBDNSName: !GetAtt "DemoWebALB.Outputs.WEBLBDNSName"
+  #       PMWEBLBHostedZoneId: !GetAtt "DemoWebALB.Outputs.WEBLBHostedZoneId"
   #       PMWEBDOMAIN: !FindInMap ["EnvMap", !Ref "AWS::StackName", "WEBDOMAIN"]
   #       PMHostedZone: !Ref "PMHostedZone"
 
@@ -264,7 +261,7 @@ Resources:
 Outputs:
   Webserver:
     Description: "Web Server Site"
-    Value:  !Join ["", ["http://", !GetAtt "DemoWEBELB.Outputs.WEBLBDNSName", ""]]
+    Value:  !Join ["", ["http://", !GetAtt "DemoWebALB.Outputs.WEBLBDNSName", ""]]
 
   # Own Certs
   # https://cloudonaut.io/pitfall-acm-certificate-cloudfront-cloudformation/

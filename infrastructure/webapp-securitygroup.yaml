@@ -61,11 +61,11 @@ Resources:
         - Key: "Name"
           Value: !Sub "${PMServerEnv}-ProxyBastionSG"
 
-  # Web Proxy Server Elastic Load Balancer
+  # Web & Applicaiton ALB specific SG; can talk to internet.
   WebAppALBSG:
     Type: "AWS::EC2::SecurityGroup"
     Properties:
-      GroupDescription: "ELB-WEBSG"
+      GroupDescription: "Web & App ALB SG"
       SecurityGroupEgress:
       - IpProtocol: "-1"
         CidrIp: "0.0.0.0/0"
@@ -84,8 +84,7 @@ Resources:
           Value: !Sub "${PMServerEnv}-WEB-APP-ALB-SG"
 
   # App Server Security Group
-  # PHP-fpm (port 9000)
-  APPHostSG:
+  WebAppHostSG:
     Type: "AWS::EC2::SecurityGroup"
     Properties:
       VpcId: !Ref "PMVPC"
@@ -113,7 +112,7 @@ Resources:
           CidrIp: '0.0.0.0/0'
       Tags:
         - Key: "Name"
-          Value: !Sub "${PMServerEnv}-APPHostSG"
+          Value: !Sub "${PMServerEnv}-WebAppHostSG"
 
   # Allow RDS connection from ProxyBastionHostSG only.
   RDSSG:
@@ -127,7 +126,7 @@ Resources:
       - FromPort: "3306"
         IpProtocol: "tcp"
         SourceSecurityGroupId:
-          Ref: "APPHostSG"
+          Ref: "WebAppHostSG"
         ToPort: "3306"
       VpcId:
         Ref: "PMVPC"
@@ -285,12 +284,12 @@ Outputs:
     Value: !Ref "ProxyBastionHostSG"
 
   WebAppALBSG:
-    Description: "A reference to the security group for Web ELB"
+    Description: "A reference to the security group for Web ALB"
     Value: !Ref "WebAppALBSG"
 
-  APPHostSG:
+  WebAppHostSG:
     Description: "A reference to the security group for APP hosts"
-    Value: !Ref "APPHostSG"
+    Value: !Ref "WebAppHostSG"
 
   RDSSG:
     Description: "A reference to the security group for RDS"

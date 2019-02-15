@@ -1,12 +1,14 @@
-# Note, This template deploys an Application Load Balancer that exposes our PHP APP services.
-# Service : PHP-fpm Service listen to port 9000
+# Note, This template deploys a Webserver Load Balancer that exposes our Nginx Proxy/Apache http services.
+# Service : Nginx Service listen to port 80
+# SSL Termination is at ALB
 #
 ---
 AWSTemplateFormatVersion: "2010-09-09"
 Description: >
-    This template deploys an Application Load Balancer that exposes our PHP APP services.
+    This template deploys an Webserver Load Balancer that exposes our Nginx Proxy services.
 
 Parameters:
+
   PMServerEnv:
     Description: "Server Environment name."
     ConstraintDescription: "Choose an Environment from the drop down"
@@ -19,20 +21,26 @@ Parameters:
     Description: "VPC to launch instances into"
     Type: "AWS::EC2::VPC::Id"
 
-  PMAPPELBSG:
-    Description: "Select the Security Group to use for the ELB"
+  PMAPPALBSG:
+    Description: "Select the Security Group to use for the ALB"
     Type: "AWS::EC2::SecurityGroup::Id"
 
   PMPrivateSubnets:
     Description: "Subnets to launch instances into"
     Type: "List<AWS::EC2::Subnet::Id>"
 
+  # PMS3Backup:
+  #   Description: "S3 Backup Bucket Name"
+  #   Type: "String"
+
   # PMS3Logging:
   #   Description: "S3 Logging Bucket Name"
   #   Type: "String"
 
+  # PMDomain1CertARN:
+  #   Description: "ARN for Demo domain name"
+  #   Type: "String"
 
-####### Resources Setup #######
 Resources:
   TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
@@ -43,18 +51,18 @@ Resources:
       HealthyThresholdCount: 4
       Matcher:
         HttpCode: '200'
-      Name: !Sub "${PMServerEnv}-AppAlbTargets"
+      Name: !Sub "${PMServerEnv}-WebAlbTargets"
       Port: 80
       Protocol: HTTP
       VpcId: !Ref "PMVPC"
-  ApplicationLoadBalancer:
+  WebLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
-      Name: !Sub "${PMServerEnv}-AppALB"
+      Name: !Sub "${PMServerEnv}-WebALB"
       Scheme: internet-facing
       Subnets: !Ref "PMPrivateSubnets"
       SecurityGroups:
-        - Ref: "PMAPPELBSG"
+        - Ref: "PMAPPALBSG"
   ALBListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
@@ -63,19 +71,23 @@ Resources:
           TargetGroupArn:
             Ref: TargetGroup
       LoadBalancerArn:
-          Ref: ApplicationLoadBalancer
+          Ref: WebLoadBalancer
       Port: 80
       Protocol: HTTP
 
 # Output LoadBalancer
 Outputs:
-  APPLoadBalancer:
-    Description: "A reference to the Application Load Balancer"
-    Value: !Ref "ApplicationLoadBalancer"
+  WEBLoadBalancer:
+    Description: "A reference to the Web Load Balancer"
+    Value: !Ref "WebLoadBalancer"
 
-  APPLoadBalancerUrl:
-    Description: "The URL of the ALB"
-    Value: !GetAtt "ApplicationLoadBalancer.DNSName"
+  WEBLBDNSName:
+    Description: "The URL of the Web Load Balancer"
+    Value: !GetAtt "WebLoadBalancer.DNSName"
+
+  # WEBLBHostedZoneId:
+  #   Description: "The CanonicalHostedZoneNameID of the Web Load Balancer"
+  #   Value: !GetAtt "WebLoadBalancer.CanonicalHostedZoneNameID"
 
   rTargetGroup:
     Description: "The resukt of TargetGroup"
