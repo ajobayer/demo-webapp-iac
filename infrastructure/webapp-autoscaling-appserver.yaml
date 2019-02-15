@@ -70,6 +70,22 @@ Parameters:
     Description: "A reference to the TargetGroup"
     Type: "String"
 
+  PMDataBaseEndpoint:
+    Description: "RDS Endpoint URL"
+    Type: "String"
+
+  PMDataBaseName:
+    Description: "RDS Endpoint URL"
+    Type: "String"
+
+  PMDataBaseUserName:
+    Description: "RDS Endpoint URL"
+    Type: "String"
+
+  PMDataBasePassword:
+    Description: "RDS Endpoint URL"
+    Type: "String"
+
 ####### Resources Setup #######
 Resources:
 
@@ -89,17 +105,29 @@ Resources:
       SecurityGroups:
       - Ref: "PMAPPHostSG"
       UserData:
-        Fn::Base64: !Sub |
-          #!/bin/bash -xe
-          yum install httpd php php-mysql git -y
-          yum update -y
-          chkconfig httpd on
-          service httpd start
-          #echo "<?php phpinfo();?>" > /var/www/html/index.php
-          cd /var/www/html
-          git clone https://github.com/ajobayer/demo-webapp-backend.git
-          cp -r demo-webapp-backend/source/* .
-
+        Fn::Base64: !Sub 
+          - |
+              #!/bin/bash -xe
+              yum install httpd php php-mysql git -y
+              yum update -y
+              chkconfig httpd on
+              service httpd start
+              #echo "<?php phpinfo();?>" > /var/www/html/index.php
+              cd /var/www/html
+              git clone https://github.com/ajobayer/demo-webapp-backend.git
+              cp -r demo-webapp-backend/source/* .
+              sed -ie 's/db-endpoint/${PMDataBaseEndpoint}/g' config.php
+              sed -ie 's/db-name/${PMDataBaseName}/g' config.php
+              sed -ie 's/db-username/${PMDataBaseUserName}/g' config.php
+              sed -ie 's/db-password/${PMDataBasePassword}/g' config.php
+          - PMDataBaseEndpoint:
+              Ref: PMDataBaseEndpoint
+          - PMDataBaseName:
+              Ref: PMDataBaseName
+          - PMDataBaseUserName:
+              Ref: PMDataBaseUserName
+          - PMDataBasePassword:
+              Ref: PMDataBasePassword
   # WaitHandleAPP:
   #   Type: "AWS::CloudFormation::WaitConditionHandle"
   #

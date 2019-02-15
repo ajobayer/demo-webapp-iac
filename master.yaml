@@ -170,10 +170,9 @@ Resources:
       TimeoutInMinutes: '15'
       Parameters:
         PMServerEnv: !Ref "AWS::StackName"
+        DatabaseName: "demomysql"
         DatabaseUser: "root1234"
         DatabasePassword: "root1234"
-        #DatabaseName: !Sub "${AWS::StackName}db"
-        DatabaseName: "DemosqlWebAppDB"
         DatabaseSize: '5'
         DatabaseEngine: "mysql"
         DatabaseInstanceClass: "db.t2.micro"
@@ -210,6 +209,11 @@ Resources:
         PMASMAX: !FindInMap ["EnvMap", !Ref "AWS::StackName", "ASMAX"]
         PMASDES: !FindInMap ["EnvMap", !Ref "AWS::StackName", "ASDES"]
         #PMWEBDOMAIN: !FindInMap ["EnvMap", !Ref "AWS::StackName", "WEBDOMAIN"]
+        PMDataBaseEndpoint: !GetAtt "DemoRDS.Outputs.RdsDbEndpoint"
+        PMDataBaseEndpoint: !GetAtt "DemoRDS.Outputs.RdsDbEndpoint"
+        PMDataBaseName: !GetAtt "DemoRDS.Outputs.DbName"
+        PMDataBaseUserName: !GetAtt "DemoRDS.Outputs.DbUser"
+        PMDataBasePassword: !GetAtt "DemoRDS.Outputs.DbPassword"
         pTargetGroup: !GetAtt "DemoAppALB.Outputs.rTargetGroup"
   DemoWebALB:
     Type: "AWS::CloudFormation::Stack"

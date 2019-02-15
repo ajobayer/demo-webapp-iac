@@ -115,13 +115,13 @@ Outputs:
     Description: "RDS Database ID"
     Value: !Ref "Database"
 
+  RdsDbEndpoint:
+    Description: "RDS Database URL"
+    Value: !GetAtt "Database.Endpoint.Address"
+
   DbName:
     Description: "RDS Database Name"
     Value: !Ref "DatabaseName"
-
-  RdsDbURL:
-    Description: "RDS Database URL"
-    Value: !GetAtt "Database.Endpoint.Address"
 
   DbUser:
     Description: "RDS Database admin account user"
