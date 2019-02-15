@@ -1,0 +1,156 @@
+# Note, the development environment will only spin a min of 1 instance (Not HA Support)
+# The production environment will spin a min of 2 instance (HA support)
+# You can adjust the ASMIN, ASMAX, ASDES at the master.yaml file
+# to meet your instances spin numbers.
+#
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+    This template deploys an AutoScaling & Launch Config for Bastion Server.
+Parameters:
+
+  PMServerEnv:
+    Description: "Server Environment name."
+    ConstraintDescription: "Choose an Environment from the drop down"
+    Type: "String"
+    AllowedValues:
+      - "dev"
+      - "staging"
+      - "prod"
+
+  PMKeyName:
+    Description: "Enter an existing EC2 KeyPair. Default is MyEC2Key"
+    Type: "String"
+
+  PMInstanceType:
+    Description: "Enter t2.micro or m1.small. Default is t2.micro."
+    Type: "String"
+    AllowedValues:
+      - "t2.micro"
+
+  PMPublicSubnets:
+    Description: "Subnets to launch instances into"
+    Type: "List<AWS::EC2::Subnet::Id>"
+
+  ProxyBastionHostSG:
+    Description: "Select the Security Group to use for the EC2 hosts"
+    Type: "AWS::EC2::SecurityGroup::Id"
+
+  # PMWEBDOMAIN:
+  #   Description: "A reference to the Webserver domain name"
+  #   Type: "String"
+
+  # PMBastionELB:
+  #   Description: "A reference to the Webserver Load Balancer"
+  #   Type: "String"
+
+  PMIAMS3CWInstanceProfile:
+    Description: "A reference to the IamInstanceProfile"
+    Type: "String"
+
+  PMRegionAMI:
+    Description: "A reference to the Region AMI"
+    Type: "String"
+
+  PMASMIN:
+    Description: "A reference to the MinSize"
+    Type: "String"
+
+  PMASMAX:
+    Description: "A reference to the MaxSize"
+    Type: "String"
+
+  PMASDES:
+    Description: "A reference to the DesiredCapacity"
+    Type: "String"
+
+
+Resources:
+
+  # Auto Scaling Launch Configuration
+  LaunchConfiguration:
+    Type: "AWS::AutoScaling::LaunchConfiguration"
+    Properties:
+      AssociatePublicIpAddress: "true"
+      KeyName:
+        Ref: "PMKeyName"
+      ImageId:
+        Ref: "PMRegionAMI"
+      InstanceType:
+        Ref: "PMInstanceType"
+      IamInstanceProfile:
+        Ref: "PMIAMS3CWInstanceProfile"
+      SecurityGroups:
+      - Ref: "PMProxyHostSG"
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          yum install httpd php php-mysql git -y
+          yum update -y
+          chkconfig httpd on
+          service httpd start
+          echo "<?php phpinfo();?>" > /var/www/html/index.php
+
+  # WaitHandleWEB:
+  #   Type: "AWS::CloudFormation::WaitConditionHandle"
+  #
+  # WaitCondition:
+  #   Type: "AWS::CloudFormation::WaitCondition"
+  #   Properties:
+  #     Handle: !Ref "WaitHandleWEB"
+  #     Timeout: '600'
+
+  # Auto Scaling Group Basic Setup
+  WebScalingGroup:
+    Type: "AWS::AutoScaling::AutoScalingGroup"
+    Properties:
+      MinSize: !Ref "PMASMIN"
+      MaxSize: !Ref "PMASMAX"
+      DesiredCapacity: !Ref "PMASDES"
+      LaunchConfigurationName:
+        Ref: "LaunchConfiguration"
+      VPCZoneIdentifier:
+        Ref: "PMPublicSubnets"
+      # LoadBalancerNames:
+      # - Ref: "PMBastionELB"
+      HealthCheckGracePeriod: "300"
+      HealthCheckType: "ELB"
+      Tags:
+      - Key: "Name"
+        Value: !Sub "${PMServerEnv}-WEBserver"
+        PropagateAtLaunch: 'true'
+
+  # Auto ScalingUp Policy - Basic Setup
+  WebServerScaleUpPolicy:
+    Type: "AWS::AutoScaling::ScalingPolicy"
+    Properties:
+      AdjustmentType: "ChangeInCapacity"
+      AutoScalingGroupName:
+        Ref: "WebScalingGroup"
+      Cooldown: '300'
+      ScalingAdjustment: '1'
+
+  # Auto ScalingDown Policy - Basic Setup
+  WebServerScaleDownPolicy:
+    Type: "AWS::AutoScaling::ScalingPolicy"
+    Properties:
+      AdjustmentType: "ChangeInCapacity"
+      AutoScalingGroupName:
+        Ref: "WebScalingGroup"
+      Cooldown: '300'
+      ScalingAdjustment: '-1'
+
+
+Outputs:
+
+  WebScalingGroup:
+    Description: "Auto Scaling Group Reference ID"
+    Value: !Ref "WebScalingGroup"
+
+  WebServerScaleUpPolicy:
+    Description: "Auto Scaling Up Policy Reference ID"
+    Value: !Ref "WebServerScaleUpPolicy"
+
+  WebServerScaleDownPolicy:
+    Description: "Auto Scaling Down Policy Reference ID"
+    Value: !Ref "WebServerScaleDownPolicy"

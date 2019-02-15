@@ -142,6 +142,25 @@ Resources:
         PMVPC: !GetAtt "DemoVPC.Outputs.VPC"
         PMNACL: !GetAtt "DemoVPC.Outputs.DemoNetworkACL"
 
+  DemoBastionHost:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: !Sub "${PMTemplateURL}/webapp-bastion-host.yaml"
+      TimeoutInMinutes: '5'
+      Parameters:
+        PMServerEnv: !Ref "AWS::StackName"
+        PMKeyName: !Ref "PMKeyName"
+        PMInstanceType: !Ref "PMInstanceType"
+        PMRegionAMI: !FindInMap ["RegionMap", !Ref "AWS::Region", "AMI"]
+        PMAPPHostSG : !GetAtt "DemoSecurityGroup.Outputs.ProxyBastionHostSG"
+        # PMBastionELB: !GetAtt "DemoAppALB.Outputs.APPLoadBalancer"
+        PMIAMS3CWInstanceProfile: !GetAtt "DemoIAMRole.Outputs.IAMS3CWInstanceProfile"
+        PMPublicSubnets: !GetAtt "DemoVPC.Outputs.PublicSubnets"
+        PMASMIN: 1
+        PMASMAX: 1
+        PMASDES: 1
+        #PMWEBDOMAIN: !FindInMap ["EnvMap", !Ref "AWS::StackName", "WEBDOMAIN"]
+
   DemoRDS:
     Type: "AWS::CloudFormation::Stack"
     DependsOn:
