@@ -6,10 +6,9 @@
 ---
 AWSTemplateFormatVersion: "2010-09-09"
 Description: >
-    This template deploys an AutoScaling Launch Config and Group for WebServer
+  This template deploys an AutoScaling Launch Config and Group for WebServer
 
 Parameters:
-
   PMServerEnv:
     Description: "Server Environment name."
     ConstraintDescription: "Choose an Environment from the drop down"
@@ -75,7 +74,6 @@ Parameters:
     Type: "String"
 
 Resources:
-
   # Auto Scaling Launch Configuration
   LaunchConfiguration:
     Type: "AWS::AutoScaling::LaunchConfiguration"
@@ -90,20 +88,20 @@ Resources:
       IamInstanceProfile:
         Ref: "PMIAMS3CWInstanceProfile"
       SecurityGroups:
-      - Ref: "PMProxyHostSG"
+        - Ref: "PMProxyHostSG"
       UserData:
-        Fn::Base64: !Sub 
+        Fn::Base64: !Sub
           - |
-              #!/bin/bash -xe
-              yum install httpd php php-mysql git -y
-              yum update -y
-              chkconfig httpd on
-              service httpd start
-              #echo "<?php phpinfo();?>" > /var/www/html/index.php
-              cd /var/www/html
-              git clone https://github.com/ajobayer/demo-webapp-frontend.git
-              cp -r demo-webapp-frontend/* .
-              sed -ie 's/app-server-elb-url/${PMAPPLoadBalancerUrl}/g' index.html
+            #!/bin/bash -xe
+            yum update -y
+            yum install httpd php php-mysql git -y
+            chkconfig httpd on
+            service httpd start
+            #echo "<?php phpinfo();?>" > /var/www/html/index.php
+            cd /var/www/html
+            git clone https://github.com/ajobayer/demo-webapp-frontend.git
+            cp -r demo-webapp-frontend/* .
+            sed -ie 's/app-server-elb-url/${PMAPPLoadBalancerUrl}/g' index.html
           - PMAPPLoadBalancerUrl:
               Ref: PMAPPLoadBalancerUrl
   # WaitHandleWEB:
@@ -126,14 +124,14 @@ Resources:
         Ref: "LaunchConfiguration"
       VPCZoneIdentifier:
         Ref: "PMPrivateSubnets"
-      TargetGroupARNs: 
-      - !Ref pTargetGroup
+      TargetGroupARNs:
+        - !Ref pTargetGroup
       HealthCheckGracePeriod: "300"
       HealthCheckType: "ELB"
       Tags:
-      - Key: "Name"
-        Value: !Sub "${PMServerEnv}-WEBserver"
-        PropagateAtLaunch: 'true'
+        - Key: "Name"
+          Value: !Sub "${PMServerEnv}-WEBserver"
+          PropagateAtLaunch: "true"
 
   # Auto ScalingUp Policy - Basic Setup
   WebServerScaleUpPolicy:
@@ -142,8 +140,8 @@ Resources:
       AdjustmentType: "ChangeInCapacity"
       AutoScalingGroupName:
         Ref: "WebScalingGroup"
-      Cooldown: '300'
-      ScalingAdjustment: '1'
+      Cooldown: "300"
+      ScalingAdjustment: "1"
 
   # Auto ScalingDown Policy - Basic Setup
   WebServerScaleDownPolicy:
@@ -152,12 +150,10 @@ Resources:
       AdjustmentType: "ChangeInCapacity"
       AutoScalingGroupName:
         Ref: "WebScalingGroup"
-      Cooldown: '300'
-      ScalingAdjustment: '-1'
-
+      Cooldown: "300"
+      ScalingAdjustment: "-1"
 
 Outputs:
-
   WebScalingGroup:
     Description: "Auto Scaling Group Reference ID"
     Value: !Ref "WebScalingGroup"

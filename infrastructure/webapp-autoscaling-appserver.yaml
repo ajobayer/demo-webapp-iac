@@ -6,10 +6,9 @@
 ---
 AWSTemplateFormatVersion: "2010-09-09"
 Description: >
-    This template deploys an AutoScaling Launch Config and Group
+  This template deploys an AutoScaling Launch Config and Group
 
 Parameters:
-
   PMServerEnv:
     Description: "Server Environment name."
     ConstraintDescription: "Choose an Environment from the drop down"
@@ -65,7 +64,7 @@ Parameters:
   PMASDES:
     Description: "A reference to the DesiredCapacity"
     Type: "String"
-  
+
   pTargetGroup:
     Description: "A reference to the TargetGroup"
     Type: "String"
@@ -88,7 +87,6 @@ Parameters:
 
 ####### Resources Setup #######
 Resources:
-
   # Auto Scaling Launch Configuration
   LaunchConfiguration:
     Type: "AWS::AutoScaling::LaunchConfiguration"
@@ -103,23 +101,23 @@ Resources:
       IamInstanceProfile:
         Ref: "PMIAMS3CWInstanceProfile"
       SecurityGroups:
-      - Ref: "PMAPPHostSG"
+        - Ref: "PMAPPHostSG"
       UserData:
-        Fn::Base64: !Sub 
+        Fn::Base64: !Sub
           - |
-              #!/bin/bash -xe
-              yum install httpd php php-mysql mysql-server mysql-client git -y
-              yum update -y
-              chkconfig httpd on
-              service httpd start
-              #echo "<?php phpinfo();?>" > /var/www/html/index.php
-              cd /var/www/html
-              git clone https://github.com/ajobayer/demo-webapp-backend.git
-              cp -r demo-webapp-backend/source/* .
-              sed -ie 's/db-endpoint/${PMDataBaseEndpoint}/g' config.php
-              sed -ie 's/db-name/${PMDataBaseName}/g' config.php
-              sed -ie 's/db-username/${PMDataBaseUserName}/g' config.php
-              sed -ie 's/db-password/${PMDataBasePassword}/g' config.php
+            #!/bin/bash -xe
+            yum update -y
+            yum install httpd php php-mysql mysql git -y
+            chkconfig httpd on
+            service httpd start
+            #echo "<?php phpinfo();?>" > /var/www/html/index.php
+            cd /var/www/html
+            git clone https://github.com/ajobayer/demo-webapp-backend.git
+            cp -r demo-webapp-backend/registration/* .
+            sed -ie 's/db-endpoint/${PMDataBaseEndpoint}/g' connection.php
+            sed -ie 's/db-name/${PMDataBaseName}/g' connection.php
+            sed -ie 's/db-username/${PMDataBaseUserName}/g' connection.php
+            sed -ie 's/db-password/${PMDataBasePassword}/g' connection.php
           - PMDataBaseEndpoint:
               Ref: PMDataBaseEndpoint
             PMDataBaseName:
@@ -150,13 +148,13 @@ Resources:
       # LoadBalancerNames:
       # - Ref: "PMAPPLoadBalancer"
       HealthCheckGracePeriod: "300"
-      TargetGroupARNs: 
-      - !Ref pTargetGroup
+      TargetGroupARNs:
+        - !Ref pTargetGroup
       HealthCheckType: "ELB"
       Tags:
-      - Key: "Name"
-        Value: !Sub "${PMServerEnv}-APPserver"
-        PropagateAtLaunch: 'true'
+        - Key: "Name"
+          Value: !Sub "${PMServerEnv}-APPserver"
+          PropagateAtLaunch: "true"
 
   # Auto ScalingUp Policy - Basic Setup
   APPServerScaleUpPolicy:
@@ -165,8 +163,8 @@ Resources:
       AdjustmentType: "ChangeInCapacity"
       AutoScalingGroupName:
         Ref: "AppScalingGroup"
-      Cooldown: '300'
-      ScalingAdjustment: '1'
+      Cooldown: "300"
+      ScalingAdjustment: "1"
 
   # Auto ScalingDown Policy - Basic Setup
   APPServerScaleDownPolicy:
@@ -175,12 +173,10 @@ Resources:
       AdjustmentType: "ChangeInCapacity"
       AutoScalingGroupName:
         Ref: "AppScalingGroup"
-      Cooldown: '300'
-      ScalingAdjustment: '-1'
-
+      Cooldown: "300"
+      ScalingAdjustment: "-1"
 
 Outputs:
-
   AppScalingGroup:
     Description: "Auto Scaling Group Reference ID"
     Value: !Ref "AppScalingGroup"
